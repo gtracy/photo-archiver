@@ -1,0 +1,25 @@
+{
+  "name": "photo-archiver",
+  "version": "0.1.0",
+  "description": "Migrates a photo from Google Drive to S3",
+  "main": "migrate.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gtracy/photo-archiver.git"
+  },
+  "author": "Greg Tracy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gtracy/photo-archiver/issues"
+  },
+  "homepage": "https://github.com/gtracy/photo-archiver#readme",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.441.0",
+    "@aws-sdk/lib-storage": "^3.441.0",
+    "dotenv-json": "^1.0.0",
+    "googleapis": "^128.0.0"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules/
+.env-greg.json
+creds*.json
+function.zip
