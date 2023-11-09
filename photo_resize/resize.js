@@ -24,6 +24,8 @@ exports.handler = async (event) => {
   const bucket = event.Records[0].s3.bucket.name;
   const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
 
+  console.log('Resize task: ' + key + ' in bucket ' + bucket + ' triggered by ' + event.Records[0].eventName);
+
   // Get the object from S3
   const getObjectParams = {
     Bucket: bucket,
