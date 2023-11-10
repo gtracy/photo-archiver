@@ -54,6 +54,7 @@ exports.handler = async (event) => {
     Bucket: bucket,
     Key: newKey,
     Body: resizedImage,
+    StorageClass: 'GLACIER_IR'
   };
   const putObjectCommand = new PutObjectCommand(putObjectParams);
   await s3Client.send(putObjectCommand);
