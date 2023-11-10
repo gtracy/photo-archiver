@@ -48,22 +48,30 @@ async function migrateRow(row) {
         console.log('no image found... skipping');
     }
 }
+module.exports = migrateRow;
 
-(async () => {
-    const pause_msec = Math.floor(Math.random() * (4987 - 500 + 1)) + 500;
-    // first row with media - 1935
-    const start_row = 2037;
-    const end_row = 2218;
+// this enables you to run the script directly from the CLI
+// e.g. node migrate.js 123
+//
+if (require.main === module) {
 
-    // Migrate a specific row
-    if( process.argv.length == 3 ) {
-        const row = process.argv[2];
-        await migrateRow(row);
-    } else {
-        for(let i=start_row; i<=end_row; i++) {
-            console.log(i);
-            await migrateRow(i);
-            await new Promise(resolve => setTimeout(resolve, pause_msec));
+    (async () => {
+        const pause_msec = Math.floor(Math.random() * (3987 - 500 + 1)) + 500;
+        // first row with media - 1935
+        const start_row = 1935;
+        const end_row = 2000;
+
+        // Migrate a specific row
+        if( process.argv.length == 3 ) {
+            const row = process.argv[2];
+            await migrateRow(row);
+        } else {
+            for(let i=start_row; i<=end_row; i++) {
+                console.log(i);
+                await migrateRow(i);
+                await new Promise(resolve => setTimeout(resolve, pause_msec));
+            }
         }
-    }
-})();
+    })();
+
+}
