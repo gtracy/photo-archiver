@@ -13,4 +13,5 @@ Migrate several rows (you should edit the script to specify the rows)
 ## photo_resize
 This directory contains a Lambda function that is triggered when a new S3 object is created and resizes the image storing it back in the same bucket
 
-
+## bucket_validator
+This directory contains a Lambda function that performs a validation of the S3 bucket. It makes sure there are two copies of every image (big + small) and flags errors when it finds them. It is designed to run on a monthly schedule.
