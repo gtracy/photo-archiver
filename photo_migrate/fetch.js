@@ -24,7 +24,9 @@ module.exports = async function fetchSheetRow(row) {
     // Example transformation: https://drive.google.com/uc?export=view&id=1ch51tiEYBdALwwmwUpSznmuVF47hUIqn
     const media = result_row[2];
     let media_url = undefined;
-    if( media ) {
+    // skip the transformation if there is no media -or- the media has already been migrated
+    //
+    if( media && media.toLowerCase().includes("google") ) {
         media_url = "https://drive.google.com/uc?export=view&id=" + media.split('id=')[1];
     }
 
