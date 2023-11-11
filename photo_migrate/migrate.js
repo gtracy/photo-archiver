@@ -34,7 +34,7 @@ async function migrateRow(row) {
             const sheet_result = await google.updateCellData(
                 process.env.GOOGLE_SHEET_ID, 
                 process.env.GOOGLE_SHEET_NAME, 
-                'D' + row, 
+                'C' + row, 
                 s3_location);
             if( sheet_result.status != 200 ) {
                 console.error('Error updating google sheet');
