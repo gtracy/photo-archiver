@@ -62,7 +62,7 @@ exports.handler = async (event) => {
         } else if( process.env.SCAN_START_ROW ) {
 
             // scanning mode: scan sheet to find total number of rows
-            const start_row = process.env.SCAN_START_ROW;
+            let start_row = process.env.SCAN_START_ROW;
             // find the last row in the sheet
             const data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, process.env.GOOGLE_SHEET_RANGE);
             const end_row = getToday(data).total_rows;
