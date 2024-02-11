@@ -25,7 +25,7 @@ const getToday = (data) => {
     });
     return {
         total_rows: data.length,
-        date_match: match
+        todays_row: match
     }
 }
 
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
             let start_row = process.env.SCAN_START_ROW;
             // find the last row in the sheet
             const data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, process.env.GOOGLE_SHEET_RANGE);
-            const end_row = getToday(data).total_rows;
+            const end_row = getToday(data).todays_row;
 
             // we can't do more than 50 rows at a time before we get
             // rate limited by Google so override SCAN_START_ROW when
@@ -88,7 +88,7 @@ exports.handler = async (event) => {
 
             // day mode: search the sheet for today's date
             const data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, process.env.GOOGLE_SHEET_RANGE);
-            const row_match = getToday(data).date_match;
+            const row_match = getToday(data).todays_row;
             console.log('TODAY: Migrate today\'s entry : ' + row_match);
             if( row_match == 0 ) {
                 console.error('... no matching date found in sheet');
