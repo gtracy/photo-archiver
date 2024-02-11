@@ -12,6 +12,7 @@ module.exports = async function fetchSheetRow(row) {
     let result_row;
     const zero_based_row = row - 1;
     try {
+        console.log('fetch row ' + zero_based_row);
         data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, process.env.GOOGLE_SHEET_RANGE);
         result_row = data[zero_based_row];
     } catch (e) {
@@ -24,10 +25,13 @@ module.exports = async function fetchSheetRow(row) {
     // Example transformation: https://drive.google.com/uc?export=view&id=1ch51tiEYBdALwwmwUpSznmuVF47hUIqn
     const media = result_row[2];
     let media_url = undefined;
-    // skip the transformation if there is no media -or- the media has already been migrated
+    // skip the transformation if there is no media 
+    // -or- the media has already been migrated
     //
     if( media && media.toLowerCase().includes("google") ) {
         media_url = "https://drive.google.com/uc?export=view&id=" + media.split('id=')[1];
+    } else {
+        console.log("missing or processed image");
     }
 
     // format the date to a nice string

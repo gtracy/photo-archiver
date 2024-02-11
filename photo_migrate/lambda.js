@@ -67,6 +67,17 @@ exports.handler = async (event) => {
             const data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, process.env.GOOGLE_SHEET_RANGE);
             const end_row = getToday(data).total_rows;
 
+            // we can't do more than 50 rows at a time before we get
+            // rate limited by Google so override SCAN_START_ROW when
+            // the collection of works gets too big
+            // BTW, this doesn't make any sense since the stated read limit
+            // is 300 (https://developers.google.com/sheets/api/limits)
+            const RATE_LIMIT_ROWS = 50
+            if( end_row - start_row > RATE_LIMIT_ROWS ) {
+                console.log('SCAN: override environment var ('+process.env.SCAN_START_ROW+')');
+                start_row = end_row - 10;
+            }
+
             console.log('SCAN: Scanning from ' + start_row + ' to ' + end_row);
             for(let i=start_row; i<=end_row; i++) {
                 await migrate(i);

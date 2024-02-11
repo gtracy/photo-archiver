@@ -8,11 +8,8 @@ async function migrateRow(row) {
     const google = new Google();
     await google.init();
 
-    const row_data = await fetchSheetRow(row);
-    console.dir(row_data);
-    
+    const row_data = await fetchSheetRow(row);    
     const media_url = row_data.media_url;
-    console.log('media -> ' + media_url);
     if( media_url ) {
         console.log('image found... stream to S3');
         console.log('date -> '+row_data.date_string);
