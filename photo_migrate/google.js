@@ -1,6 +1,5 @@
 
 const {google} = require('googleapis');
-const util = require('util')
 
 const Google = function() {
     var self = this;
@@ -47,6 +46,20 @@ Google.prototype.downloadFile = async function(fileId) {
     }
 }
 
+/**
+ * Delete a Drive file
+ */
+Google.prototype.deleteFile = async function(fileId) {
+    try {
+        await this.drive.files.delete({
+            fileId: fileId,
+        });
+    } catch (error) {
+        console.error('Google Error:', error);
+        throw error;
+    }
+}
+  
 /**
  * Fetch a list of data from a spreadsheet
  *

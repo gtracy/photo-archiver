@@ -37,6 +37,16 @@ async function migrateRow(row) {
                 console.error('Error updating google sheet');
                 console.dir(sheet_result);
                 return;
+            } else {
+                // go delete the original image as well as the copy Google Drive made
+                const drive_result = await google.deleteFile(row_data.media_file_id);
+                if( drive_result.status != 200 ) {
+                    console.error('Error deleting image from google drive - '+row_data.media_file_id);
+                    console.dir(drive_result);
+                    return;
+                } else {
+                    console.log('image deleted from google drive - '+row_data.media_file_id);
+                }
             }
         } catch (e) {
             console.error(e);
