@@ -4,45 +4,50 @@ const fetchSheetRow = require('./fetch');
 const Google = require('./google');
 
 async function migrateRow(row) {
-    // setup a google api client
-    const google = new Google();
-    await google.init();
 
-    const row_data = await fetchSheetRow(row);    
-    const media_url = row_data.media_url;
-    if( media_url ) {
-        console.log('image found... stream to S3');
-        console.log('date -> '+row_data.date_string);
-        const result = await stream_image.stream(media_url,row_data.date_string+'.jpg');
-        if( result.statusCode != 200 ) {
-            console.error('Error streaming image to S3');
-            console.dir(result);
-            return;
-        }
+    try {
+        // setup a google api client
+        const google = new Google();
+        await google.init();
 
-        try {
-            // this is a hack because the aws-sdk sometimes returns a url with a double encoded %2F
-            const decoded_location = decodeURIComponent(result.s3_result.Location);
-
-            // there is a background task that resizes the image.
-            // modify the s3 location to point to this new image.
-            const s3_location = decoded_location.split(stream_image.getS3KeyPrefix()).join('');
-            console.log('updating google sheet... '+s3_location);
-            const sheet_result = await google.updateCellData(
-                process.env.GOOGLE_SHEET_ID, 
-                process.env.GOOGLE_SHEET_NAME, 
-                'C' + row, 
-                s3_location);
-            if( sheet_result.status != 200 ) {
-                console.error('Error updating google sheet');
-                console.dir(sheet_result);
+        const row_data = await fetchSheetRow(row);    
+        const media_url = row_data.media_url;
+        if( media_url ) {
+            console.log('image found... stream to S3');
+            console.log('date -> '+row_data.date_string);
+            const result = await stream_image.stream(media_url,row_data.date_string+'.jpg');
+            if( result.statusCode != 200 ) {
+                console.error('Error streaming image to S3');
+                console.dir(result);
                 return;
             }
-        } catch (e) {
-            console.error(e);
+
+            try {
+                // this is a hack because the aws-sdk sometimes returns a url with a double encoded %2F
+                const decoded_location = decodeURIComponent(result.s3_result.Location);
+
+                // there is a background task that resizes the image.
+                // modify the s3 location to point to this new image.
+                const s3_location = decoded_location.split(stream_image.getS3KeyPrefix()).join('');
+                console.log('updating google sheet... '+s3_location);
+                const sheet_result = await google.updateCellData(
+                    process.env.GOOGLE_SHEET_ID, 
+                    process.env.GOOGLE_SHEET_NAME, 
+                    'C' + row, 
+                    s3_location);
+                if( sheet_result.status != 200 ) {
+                    console.error('Error updating google sheet');
+                    console.dir(sheet_result);
+                    return;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        } else {
+            console.log('no image found... skipping');
         }
-    } else {
-        console.log('no image found... skipping');
+    } catch (error) {
+        console.error(error);
     }
 }
 module.exports = migrateRow;

@@ -8,8 +8,10 @@ const getToday = (data) => {
     // find today's date
     const today = new Date();
     const this_year = today.getFullYear();
-    today.setHours(0, 0, 0, 0);
-    console.log('Today is ' + today.toDateString());
+    //today.setHours(0, 0, 0, 0);
+    const centralTime = today.toLocaleString('en-US', { timeZone: 'America/Chicago' });
+    const centralDate = new Date(centralTime);
+    console.log('Today is ' + centralDate.toDateString());
 
     // stash row numbers when we find matching dates
     let match = 0;
@@ -17,14 +19,14 @@ const getToday = (data) => {
         const date = new Date(timestamp[0]);
         const year = date.getFullYear();
         date.setHours(0, 0, 0, 0);
-        if (date.getTime() === today.getTime()) {
-            // skip the header row
+        if (date.getTime() === centralDate.getTime()) {
             console.log('Found matching date at row ' + (index + 1));
+            // skip the header row
             match = index + 1;
         }
     });
     return {
-        total_rows: data.length,
+        total_rows: parseInt(data.length,10),
         todays_row: match
     }
 }
@@ -45,11 +47,11 @@ const getToday = (data) => {
 // 
 //
 exports.handler = async (event) => {
-    // setup a google api client
-    const google = new Google();
-    const response = await google.init();
 
     try {
+        // setup a google api client
+        const google = new Google();
+        const response = await google.init();
 
         // test which mode the lambda function is running in
         //
@@ -62,10 +64,13 @@ exports.handler = async (event) => {
         } else if( process.env.SCAN_START_ROW ) {
 
             // scanning mode: scan sheet to find total number of rows
-            let start_row = process.env.SCAN_START_ROW;
+            let start_row = parseInt(process.env.SCAN_START_ROW,10);
             // find the last row in the sheet
             const data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, process.env.GOOGLE_SHEET_RANGE);
-            const end_row = getToday(data).todays_row;
+            const end_row = start_row + getToday(data).total_rows - 1;
+            console.dir(getToday(data));
+            console.log('start: '+start_row);
+            console.log('  end: '+end_row);
 
             // we can't do more than 50 rows at a time before we get
             // rate limited by Google so override SCAN_START_ROW when

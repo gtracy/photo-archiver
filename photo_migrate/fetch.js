@@ -10,11 +10,16 @@ module.exports = async function fetchSheetRow(row) {
     // fetch the memory dates from the sheet
     let data;
     let result_row;
-    const zero_based_row = row - 1;
     try {
-        console.log('fetch row ' + zero_based_row);
-        data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, process.env.GOOGLE_SHEET_RANGE);
-        result_row = data[zero_based_row];
+        const sheet_range = "Form Responses 1!A"+row+":C"+row;
+        console.log('fetch row ' + sheet_range);
+        data = await google.getSheetData(process.env.GOOGLE_SHEET_ID, sheet_range);
+        if( data.length === 0 || data.length > 1 ) {
+            console.error('fetchSheetRow is borked');
+            console.error(data);
+            throw new Error("fetchSheetRow was unable to fetch a single row of data");
+        }
+        result_row = data[0];
     } catch (e) {
         console.error(e);
     }
