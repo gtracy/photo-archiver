@@ -106,8 +106,13 @@ describe('streamImage', () => {
       mimeType: 'image/heic'
     });
 
+    // Build a buffer with a valid ISOBMFF 'ftyp' box header so the magic-byte check passes
+    const ftypHeader = Buffer.alloc(12);
+    ftypHeader.write('ftyp', 4, 4, 'ascii');
+    ftypHeader.write('heic', 8, 4, 'ascii');
+
     const mockStream = new Readable();
-    mockStream.push('heic-raw-bytes');
+    mockStream.push(ftypHeader);
     mockStream.push(null);
     mockDownloadFile.mockResolvedValue({ data: mockStream });
 
@@ -121,7 +126,7 @@ describe('streamImage', () => {
     expect(mockGetFileMetadata).toHaveBeenCalledWith('456');
     expect(mockDownloadFile).toHaveBeenCalledWith('456');
     expect(convert).toHaveBeenCalledWith({
-      buffer: Buffer.from('heic-raw-bytes'),
+      buffer: ftypHeader,
       format: 'JPEG',
       quality: 1
     });
@@ -132,6 +137,40 @@ describe('streamImage', () => {
     expect(uploadCallParams.Key).toBe('originals/family_photo.jpg');
     expect(uploadCallParams.Body).toBeInstanceOf(Buffer);
     expect(uploadCallParams.Body.toString()).toBe('converted-jpeg-bytes');
+
+    expect(result).toEqual({
+      statusCode: 200,
+      body: 'Image uploaded to S3 successfully.',
+      s3_result: { Location: 'https://test-bucket.s3.amazonaws.com/originals/photo.jpg' }
+    });
+  });
+
+  it('should upload as-is when metadata says HEIC but bytes are actually JPEG (Google Drive auto-conversion)', async () => {
+    // 1. Mock Google responses — metadata says HEIC
+    mockGetFileMetadata.mockResolvedValue({
+      name: 'photo.heic',
+      mimeType: 'image/heic'
+    });
+
+    // But the actual bytes are a JPEG (starts with FF D8 FF, no ftyp box)
+    const jpegBytes = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46]);
+    const mockStream = new Readable();
+    mockStream.push(jpegBytes);
+    mockStream.push(null);
+    mockDownloadFile.mockResolvedValue({ data: mockStream });
+
+    // 2. Run stream function
+    const result = await streamImage.stream('https://drive.google.com/uc?id=789', 'photo.jpg');
+
+    // 3. Assertions — heic-convert should NOT have been called
+    expect(convert).not.toHaveBeenCalled();
+    expect(Upload).toHaveBeenCalled();
+
+    // The S3 upload body should be the raw JPEG buffer, not converted
+    const uploadCallParams = Upload.mock.calls[0][0].params;
+    expect(uploadCallParams.Key).toBe('originals/photo.jpg');
+    expect(uploadCallParams.Body).toBeInstanceOf(Buffer);
+    expect(uploadCallParams.Body).toEqual(jpegBytes);
 
     expect(result).toEqual({
       statusCode: 200,

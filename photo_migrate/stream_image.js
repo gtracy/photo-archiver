@@ -41,14 +41,25 @@ module.exports.stream = async (imageUrl, s3Key) => {
         chunks.push(chunk instanceof Buffer ? chunk : Buffer.from(chunk));
       }
       const inputBuffer = Buffer.concat(chunks);
-      
-      logger.info({ fileId }, 'Converting HEIC file to JPEG');
-      uploadBody = await convert({
-        buffer: inputBuffer,
-        format: 'JPEG',
-        quality: 1
-      });
-      logger.info({ fileId }, 'HEIC conversion completed successfully');
+
+      // Validate that the buffer actually contains HEIC data by checking
+      // for the ISOBMFF 'ftyp' box signature at byte offset 4.
+      // Google Drive sometimes auto-converts HEIC to JPEG during download,
+      // so the metadata may say HEIC but the bytes are already JPEG.
+      const isFtypBox = inputBuffer.length > 8 && inputBuffer.toString('ascii', 4, 8) === 'ftyp';
+
+      if (isFtypBox) {
+        logger.info({ fileId, bufferSize: inputBuffer.length }, 'Buffer confirmed as HEIC, converting to JPEG');
+        uploadBody = await convert({
+          buffer: inputBuffer,
+          format: 'JPEG',
+          quality: 1
+        });
+        logger.info({ fileId }, 'HEIC conversion completed successfully');
+      } else {
+        logger.info({ fileId, bufferSize: inputBuffer.length }, 'Buffer is not HEIC despite metadata, uploading as-is');
+        uploadBody = inputBuffer;
+      }
     } else {
       // Create a PassThrough stream to pipe the download stream
       const passThrough = new PassThrough();
