@@ -1,6 +1,8 @@
 
 const {google} = require('googleapis');
-const util = require('util')
+const util = require('util');
+const pino = require('pino');
+const logger = pino();
 
 const Google = function() {
     var self = this;
@@ -35,14 +37,32 @@ const Google = function() {
 Google.prototype.downloadFile = async function(fileId) {
     try {
         // Download the file from Google Drive
-        console.log('Download file: ' + fileId);
+        logger.info({ fileId }, 'Downloading file from Google Drive');
         const driveResponse = await this.drive.files.get(
             { fileId: fileId, alt: 'media' },
             { responseType: 'stream' }
         );
         return driveResponse;
     } catch (error) {
-        console.error('Error:', error);
+        logger.error({ fileId, error: error.message }, 'Error downloading file from Google Drive');
+        throw error;
+    }
+}
+
+/**
+ * Get file metadata from Google Drive
+ */
+Google.prototype.getFileMetadata = async function(fileId) {
+    try {
+        logger.info({ fileId }, 'Fetching file metadata from Google Drive');
+        const response = await this.drive.files.get({
+            fileId: fileId,
+            fields: 'name, mimeType, size'
+        });
+        logger.info({ fileId, name: response.data.name, mimeType: response.data.mimeType }, 'Successfully fetched file metadata');
+        return response.data;
+    } catch (error) {
+        logger.error({ fileId, error: error.message }, 'Error fetching file metadata from Google Drive');
         throw error;
     }
 }

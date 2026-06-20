@@ -2,6 +2,9 @@ const Google = require('./google');
 const { S3Client } = require("@aws-sdk/client-s3");
 const { Upload } = require("@aws-sdk/lib-storage");
 const { PassThrough } = require('stream');
+const convert = require('heic-convert');
+const pino = require('pino');
+const logger = pino();
 
 function extractGoogleDriveId(url) {
   const urlObj = new URL(url);
@@ -21,16 +24,54 @@ module.exports.stream = async (imageUrl, s3Key) => {
     const google = new Google();
     await google.init();
     const fileId = extractGoogleDriveId(imageUrl);
+
+    // fetch metadata first to determine if it is HEIC
+    const metadata = await google.getFileMetadata(fileId);
+    const mimeType = metadata.mimeType ? metadata.mimeType.toLowerCase() : '';
+    const filename = metadata.name ? metadata.name.toLowerCase() : '';
+    const isHeic = mimeType.includes('heic') || mimeType.includes('heif') || filename.endsWith('.heic') || filename.endsWith('.heif');
+
     const driveResponse = await google.downloadFile(fileId);
 
-    // Create a PassThrough stream to pipe the download stream
-    const passThrough = new PassThrough();
+    let uploadBody;
+    if (isHeic) {
+      logger.info({ fileId, filename, mimeType }, 'Detected HEIC file, downloading to buffer for conversion');
+      const chunks = [];
+      for await (const chunk of driveResponse.data) {
+        chunks.push(chunk instanceof Buffer ? chunk : Buffer.from(chunk));
+      }
+      const inputBuffer = Buffer.concat(chunks);
+      
+      logger.info({ fileId }, 'Converting HEIC file to JPEG');
+      uploadBody = await convert({
+        buffer: inputBuffer,
+        format: 'JPEG',
+        quality: 1
+      });
+      logger.info({ fileId }, 'HEIC conversion completed successfully');
+    } else {
+      // Create a PassThrough stream to pipe the download stream
+      const passThrough = new PassThrough();
+      
+      // Handle the Google Drive stream and pipe it to the PassThrough stream
+      driveResponse.data
+        .on('end', () => {
+          logger.info({ fileId }, 'Done downloading file from Google Drive');
+        })
+        .on('error', (error) => {
+          logger.error({ fileId, error: error.message }, '*** ERROR downloading file from Google Drive');
+          passThrough.end(); // End the PassThrough stream if an error occurs
+        })
+        .pipe(passThrough);
+
+      uploadBody = passThrough;
+    }
 
     // Prepare S3 parameters
     const params = {
       Bucket: s3Bucket,
       Key: 'originals/' + s3Key,
-      Body: passThrough,
+      Body: uploadBody,
       StorageClass: 'GLACIER_IR'
     };
 
@@ -40,19 +81,10 @@ module.exports.stream = async (imageUrl, s3Key) => {
       params: params,
     });
 
-    // Handle the Google Drive stream and pipe it to the PassThrough stream
-    driveResponse.data
-      .on('end', () => {
-        console.log('Done downloading file from Google Drive.');
-      })
-      .on('error', (error) => {
-        console.error('*** ERROR downloading file from Google Drive:', error);
-        passThrough.end(); // End the PassThrough stream if an error occurs
-      })
-      .pipe(passThrough);
-
     // Wait for the upload to S3 to finish
+    logger.info({ s3Bucket, s3Key, isHeic }, 'Uploading image to S3');
     const s3_result = await uploader.done();
+    logger.info({ s3Bucket, s3Key, location: s3_result.Location }, 'Image uploaded to S3 successfully');
     return {
       statusCode: 200,
       body: 'Image uploaded to S3 successfully.',
@@ -60,7 +92,7 @@ module.exports.stream = async (imageUrl, s3Key) => {
     };
 
   } catch (error) {
-    console.error('Error:', error);
+    logger.error({ imageUrl, s3Key, error: error.message }, 'Error in stream_image process');
     throw error;
   }
 }
