@@ -1,0 +1,13 @@
+{
+  "name": "photo-archiver-workspace",
+  "version": "1.0.0",
+  "description": "Workspace for photo archiver service and lambda functions",
+  "private": true,
+  "scripts": {
+    "test": "jest --runInBand --detectOpenHandles",
+    "test:coverage": "jest --coverage --runInBand --detectOpenHandles"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

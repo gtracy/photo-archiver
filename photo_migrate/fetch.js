@@ -22,6 +22,7 @@ module.exports = async function fetchSheetRow(row) {
         result_row = data[0];
     } catch (e) {
         console.error(e);
+        throw e;
     }
 
     // determine if there is media to include. if so, we have to transform the 

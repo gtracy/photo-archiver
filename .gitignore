@@ -2,3 +2,7 @@ node_modules/
 .env-greg.json
 creds*.json
 function.zip
+
+photo_migrate/test/result*.jpg
+coverage/
+**/sample*.heic
