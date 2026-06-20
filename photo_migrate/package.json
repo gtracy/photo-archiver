@@ -20,7 +20,7 @@
     "@aws-sdk/client-s3": "^3.441.0",
     "@aws-sdk/lib-storage": "^3.441.0",
     "dotenv-json": "^1.0.0",
-    "googleapis": "^128.0.0",
+    "googleapis": "^173.0.0",
     "heic-convert": "^2.1.0",
     "pino": "^10.3.1"
   }
