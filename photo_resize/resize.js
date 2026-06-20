@@ -33,27 +33,39 @@ exports.handler = async (event) => {
   };
   const getObjectCommand = new GetObjectCommand(getObjectParams);
   const s3Object = await s3Client.send(getObjectCommand);
-  const image = sharp(await streamToBuffer(s3Object.Body));
-
-  // Get metadata to find original dimensions
-  const metadata = await image.metadata();
-
-  // Calculate new dimensions
-  const newWidth = Math.round(metadata.width / 3);
-  const newHeight = Math.round(metadata.height / 3);
-
-  // Resize the image
-  const resizedImage = await image.resize(newWidth, newHeight).withMetadata().toBuffer();
+  const imageBuffer = await streamToBuffer(s3Object.Body);
 
   // Strip the prefix and append a suffix for the new key
   // *** the string we are stripping must match the prefix in photo_migrate/stream_image ***
   const newKey = stripPrefix(key, 'originals/');
 
+  const MAX_SIZE_BYTES = 256 * 1024; // 256KB
+  let outputBuffer;
+
+  if (imageBuffer.length < MAX_SIZE_BYTES) {
+    // Image is already under 256KB, no resize needed
+    console.log('Image is already under 256KB (' + imageBuffer.length + ' bytes), skipping resize for: ' + key);
+    outputBuffer = imageBuffer;
+  } else {
+    const image = sharp(imageBuffer);
+
+    // Get metadata to find original dimensions
+    const metadata = await image.metadata();
+
+    // Calculate new dimensions
+    const newWidth = Math.round(metadata.width / 3);
+    const newHeight = Math.round(metadata.height / 3);
+
+    // Resize the image
+    outputBuffer = await image.resize(newWidth, newHeight).withMetadata().toBuffer();
+    console.log('Resized image from ' + imageBuffer.length + ' to ' + outputBuffer.length + ' bytes for: ' + key);
+  }
+
   // Upload the resized image to the specified bucket at the new key
   const putObjectParams = {
     Bucket: bucket,
     Key: newKey,
-    Body: resizedImage,
+    Body: outputBuffer,
     StorageClass: 'GLACIER_IR'
   };
   const putObjectCommand = new PutObjectCommand(putObjectParams);
