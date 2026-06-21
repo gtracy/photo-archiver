@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: # Enable manual triggers from the GitHub UI
 
 permissions:
   id-token: write # Required for AWS OIDC credentials
@@ -14,9 +15,9 @@ jobs:
     name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
-      photo_migrate: ${{ steps.filter.outputs.photo_migrate }}
-      photo_resize: ${{ steps.filter.outputs.photo_resize }}
-      bucket_validator: ${{ steps.filter.outputs.bucket_validator }}
+      photo_migrate: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.photo_migrate == 'true' }}
+      photo_resize: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.photo_resize == 'true' }}
+      bucket_validator: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.bucket_validator == 'true' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
