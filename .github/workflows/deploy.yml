@@ -74,6 +74,11 @@ jobs:
             --function-name memories-photo-migration \
             --zip-file fileb://function.zip
 
+      - name: Wait for Lambda Update to Complete
+        run: |
+          aws lambda wait function-updated \
+            --function-name memories-photo-migration
+
       - name: Update Lambda Configuration
         run: |
           cat << 'EOF' > env.json
@@ -171,6 +176,11 @@ jobs:
           aws lambda update-function-code \
             --function-name memories-photo-validator \
             --zip-file fileb://function.zip
+
+      - name: Wait for Lambda Update to Complete
+        run: |
+          aws lambda wait function-updated \
+            --function-name memories-photo-validator
 
       - name: Update Lambda Configuration
         run: |
