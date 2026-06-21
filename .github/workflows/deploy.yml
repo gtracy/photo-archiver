@@ -75,9 +75,20 @@ jobs:
 
       - name: Update Lambda Configuration
         run: |
+          cat << 'EOF' > env.json
+          {
+            "Variables": {
+              "GOOGLE_SHEET_ID": ${{ toJSON(vars.GOOGLE_SHEET_ID) }},
+              "GOOGLE_SHEET_NAME": ${{ toJSON(vars.GOOGLE_SHEET_NAME) }},
+              "GOOGLE_SHEET_RANGE": ${{ toJSON(vars.GOOGLE_SHEET_RANGE) }},
+              "S3_BUCKET": ${{ toJSON(vars.S3_BUCKET) }},
+              "GOOGLE_CREDENTIALS_JSON": ${{ toJSON(secrets.GOOGLE_CREDENTIALS_JSON) }}
+            }
+          }
+          EOF
           aws lambda update-function-configuration \
             --function-name memories-photo-migration \
-            --environment "Variables={GOOGLE_SHEET_ID=${{ vars.GOOGLE_SHEET_ID }},GOOGLE_SHEET_NAME=${{ vars.GOOGLE_SHEET_NAME }},GOOGLE_SHEET_RANGE=${{ vars.GOOGLE_SHEET_RANGE }},S3_BUCKET=${{ vars.S3_BUCKET }},GOOGLE_CREDENTIALS_JSON=${{ secrets.GOOGLE_CREDENTIALS_JSON }}}"
+            --environment file://env.json
 
   deploy-photo-resize:
     name: Deploy photoResize
@@ -162,6 +173,13 @@ jobs:
 
       - name: Update Lambda Configuration
         run: |
+          cat << 'EOF' > env.json
+          {
+            "Variables": {
+              "S3_BUCKET": ${{ toJSON(vars.S3_BUCKET) }}
+            }
+          }
+          EOF
           aws lambda update-function-configuration \
             --function-name memories-photo-validator \
-            --environment "Variables={S3_BUCKET=${{ vars.S3_BUCKET }}}"
+            --environment file://env.json
