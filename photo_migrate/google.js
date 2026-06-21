@@ -7,11 +7,21 @@ const logger = pino();
 const Google = function() {
     var self = this;
 
-    const auth = new google.auth.GoogleAuth({
+    const authOptions = {
         // Scopes can be specified either as an array or as a single, space-delimited string.
         scopes: ['https://www.googleapis.com/auth/spreadsheets',
                  'https://www.googleapis.com/auth/drive']
-    });
+    };
+
+    if (process.env.GOOGLE_CREDENTIALS_JSON) {
+        try {
+            authOptions.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+        } catch (e) {
+            logger.error({ error: e.message }, 'Failed to parse GOOGLE_CREDENTIALS_JSON environment variable');
+        }
+    }
+
+    const auth = new google.auth.GoogleAuth(authOptions);
 
     this.init = async function() {
 

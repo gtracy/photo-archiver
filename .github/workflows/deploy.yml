@@ -1,0 +1,167 @@
+name: Deploy Lambdas to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write # Required for AWS OIDC credentials
+  contents: read  # Required for checkout
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      photo_migrate: ${{ steps.filter.outputs.photo_migrate }}
+      photo_resize: ${{ steps.filter.outputs.photo_resize }}
+      bucket_validator: ${{ steps.filter.outputs.bucket_validator }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Path Filter
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            photo_migrate:
+              - 'photo_migrate/**'
+            photo_resize:
+              - 'photo_resize/**'
+            bucket_validator:
+              - 'bucket_validator/**'
+
+  deploy-photo-migrate:
+    name: Deploy memories-photo-migration
+    needs: changes
+    if: needs.changes.outputs.photo_migrate == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'photo_migrate/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd photo_migrate
+          npm ci --omit=dev
+
+      - name: Package Code
+        run: |
+          cd photo_migrate
+          zip -r function.zip . -x "creds*.json" ".env*.json" "function.zip" "test/*" "*.md"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-2
+          audience: sts.amazonaws.com
+
+      - name: Deploy Code to Lambda
+        run: |
+          cd photo_migrate
+          aws lambda update-function-code \
+            --function-name memories-photo-migration \
+            --zip-file fileb://function.zip
+
+      - name: Update Lambda Configuration
+        run: |
+          aws lambda update-function-configuration \
+            --function-name memories-photo-migration \
+            --environment "Variables={GOOGLE_SHEET_ID=${{ vars.GOOGLE_SHEET_ID }},GOOGLE_SHEET_NAME=${{ vars.GOOGLE_SHEET_NAME }},GOOGLE_SHEET_RANGE=${{ vars.GOOGLE_SHEET_RANGE }},S3_BUCKET=${{ vars.S3_BUCKET }},GOOGLE_CREDENTIALS_JSON=${{ secrets.GOOGLE_CREDENTIALS_JSON }}}"
+
+  deploy-photo-resize:
+    name: Deploy photoResize
+    needs: changes
+    if: needs.changes.outputs.photo_resize == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'photo_resize/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd photo_resize
+          # Standard npm ci on linux x64 compiles sharp natively for the x86_64 runtime
+          npm ci --omit=dev
+
+      - name: Package Code
+        run: |
+          cd photo_resize
+          zip -r function.zip . -x "function.zip" "test/*" "*.md"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-2
+          audience: sts.amazonaws.com
+
+      - name: Deploy Code to Lambda
+        run: |
+          cd photo_resize
+          aws lambda update-function-code \
+            --function-name photoResize \
+            --zip-file fileb://function.zip
+
+  deploy-bucket-validator:
+    name: Deploy memories-photo-validator
+    needs: changes
+    if: needs.changes.outputs.bucket_validator == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'bucket_validator/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd bucket_validator
+          npm ci --omit=dev
+
+      - name: Package Code
+        run: |
+          cd bucket_validator
+          zip -r function.zip . -x "function.zip" "test/*" "*.md"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-2
+          audience: sts.amazonaws.com
+
+      - name: Deploy Code to Lambda
+        run: |
+          cd bucket_validator
+          aws lambda update-function-code \
+            --function-name memories-photo-validator \
+            --zip-file fileb://function.zip
+
+      - name: Update Lambda Configuration
+        run: |
+          aws lambda update-function-configuration \
+            --function-name memories-photo-validator \
+            --environment "Variables={S3_BUCKET=${{ vars.S3_BUCKET }}}"

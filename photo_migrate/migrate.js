@@ -1,4 +1,9 @@
-const dotenv = require('dotenv-json')();
+const fs = require('fs');
+const path = require('path');
+const envPath = path.resolve(__dirname, '.env.json');
+if (fs.existsSync(envPath)) {
+    require('dotenv-json')({ path: envPath });
+}
 const stream_image = require('./stream_image');
 const fetchSheetRow = require('./fetch');
 const Google = require('./google');
