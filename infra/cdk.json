@@ -1,0 +1,32 @@
+{
+  "app": "npx ts-node bin/infra.ts",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk.*.json",
+      "tsconfig.json",
+      "package*.json",
+      "node_modules",
+      "cdk.out"
+    ]
+  },
+  "context": {
+    "@aws-cdk/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
+    "@aws-cdk/core:stackRelativeExports": true,
+    "@aws-cdk/aws-rds:databaseInsensitiveClusterId": true,
+    "@aws-cdk/aws-cw-logs:createMetadataSidecarByDefault": true,
+    "@aws-cdk/aws-lambda:recognizeVersionProps": true,
+    "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
+    "@aws-cdk/aws-s3:keepNotificationInSignerRole": true,
+    "@aws-cdk/aws-ecs:arnFormatIncludesClusterName": true,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/core:validateMapConnections": true,
+    "@aws-cdk/aws-s3:createDefaultLoggingPolicy": true,
+    "@aws-cdk/aws-sns-subscriptions:restrictSnsRolePolicy": true,
+    "@aws-cdk/aws-route53-targets:wildcardSubdomainResourceRecordSet": true,
+    "@aws-cdk/core:enablePartitionLiterals": true
+  }
+}

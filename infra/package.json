@@ -1,0 +1,22 @@
+{
+  "name": "photo-archiver-infra",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AWS CDK observability dashboard for photo-archiver",
+  "main": "bin/infra.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.130.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "aws-cdk": "^2.130.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
